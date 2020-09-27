@@ -2,7 +2,7 @@
 
 
 ```
-f1_sector % python3 f1_sector.py
+f1_sector % python3 f1_sector.py --circuit mugello
 
    Position Driver no.          Driver First Sector Second Sector Third Sector  Lap Time
 0         1         44    L Hamilton         28.718        21.555       28.560  1:18.833
