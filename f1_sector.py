@@ -3,6 +3,8 @@ import numpy as np
 from bs4 import BeautifulSoup
 import argparse
 import os
+import matplotlib.pyplot as plt
+from assets.f1colors import f1colors
 
 # Setup argument parser
 # since site does not allow webscraping (403) just copy html to file
@@ -20,7 +22,7 @@ cols = ["Position", "Driver no.", "Driver",
         "First Sector", "Second Sector", "Third Sector", "Lap Time"]
 df = pd.DataFrame(columns=cols)
 
-### Setup path
+# Setup path
 circuit = args.circuit
 path = os.path.join("circuits/" + circuit + ".html")
 
@@ -38,10 +40,14 @@ table = results.find("tbody", {"role": "alert"})
 tablerows = table.findAll("tr")
 
 # times are labeled with position "time [x]"", remove brackets and only get time.
+
+
 def removeBrackets(s_times):
     return(list(map(lambda time: time.split(" ", 1)[0], s_times)))
 
 # Gets relevant data from row
+
+
 def getSectorTimes(row):
     tableData = row.findAll("td")
     tableDataList = list(map(lambda td: td.text, tableData))
@@ -57,8 +63,56 @@ def getSectorTimes(row):
 def getDataFrames(tablerows):
     return list(map(lambda row: getSectorTimes(row), tablerows))
 
+
 listOfDataFrames = getDataFrames(tablerows)
-
 df = pd.concat(listOfDataFrames).reset_index(drop=True)
+print(df.to_markdown(index=False))
 
-print(df)
+
+participants = df.shape[0]
+
+### Setup relative placement at different sections
+y = np.arange(1, participants+1, 1)
+df = df.sort_values(by="First Sector", ascending=True)
+df["relative1"] = y
+
+df = df.sort_values(by="Second Sector", ascending=True)
+df["relative2"] = y
+
+df = df.sort_values(by="Third Sector", ascending=True)
+df["relative3"] = y
+
+
+_, ax = plt.subplots()
+for _idx, row in df.iterrows():
+    driverNmbr = row["Driver no."]
+    col = f1colors[driverNmbr]
+    r1= -row["relative1"]
+    r2= -row["relative2"]
+    r3= -row["relative3"]
+    plt.plot([1, 2,
+              3], [r1, r2, r3], marker='o', linestyle='-', c=col)
+    plt.text(0.85, r1 - 0.25, s=driverNmbr, c=col)
+
+
+
+### MATPLOTLIB CONFIGURATION
+# remove yticks
+plt.tick_params(
+    axis='y',          
+    which='both',      
+    left=False,             
+    labelleft=False)
+
+plt.xlim(0.8,3.2)
+plt.xticks([1,2,3], ["First Sector", "Second Sector", "Third Sector"])
+
+plt.title("Sector placements for " + circuit.capitalize())
+
+# remove framing
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+ax.spines['left'].set_visible(False)
+
+plt.show()
